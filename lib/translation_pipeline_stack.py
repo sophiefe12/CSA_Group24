@@ -42,8 +42,7 @@ class TranslationPipelineStack(Stack):
                     "transcribe:StartTranscriptionJob",
                     "transcribe:GetTranscriptionJob",
                     "translate:TranslateText",
-                    "polly:SynthesizeSpeech",
-                    "states:StartExecution"
+                    "polly:SynthesizeSpeech"
                 ]
             )
         )
@@ -70,14 +69,6 @@ class TranslationPipelineStack(Stack):
             runtime=_lambda.Runtime.PYTHON_3_8,
             handler="polly.handler",
             code=_lambda.Code.from_asset("lambda")
-        )
-
-        # Grant FilterFunction permission to start the Step Function execution
-        filter_lambda.add_to_role_policy(
-            iam.PolicyStatement(
-                actions=["states:StartExecution"],
-                resources=["arn:aws:states:eu-west-1:471112856816:stateMachine:TranslationStateMachine65E7A269-rjqOb69GwgXO"]
-            )
         )
 
         # Step Function Definition
@@ -160,15 +151,17 @@ class TranslationPipelineStack(Stack):
 
         state_machine = sfn.StateMachine(
             self, "TranslationStateMachine",
-            definition_body=sfn.DefinitionBody.from_chainable(definition),  # Use definition_body
+            definition_body=sfn.DefinitionBody.from_chainable(definition),
             role=step_functions_role
         )
-
+        
         # EventBridge rule to trigger Step Function on S3 file upload
+        event_bus = events.EventBus(self, "MyEventBus")
         rule = events.Rule(
             self, "Rule",
             event_pattern={
                 "source": ["aws.s3"],
+                "detail_type": ["Object Created"],
                 "detail": {
                     "bucket": {
                         "name": [bucket.bucket_name]
@@ -181,7 +174,12 @@ class TranslationPipelineStack(Stack):
                 }
             }
         )
-
+        # Add permission for EventBridge to invoke the filter Lambda function
+        filter_lambda.add_permission(
+            "AllowEventBridgeInvoke",
+            principal=iam.ServicePrincipal("events.amazonaws.com"),
+            source_arn=rule.rule_arn
+        )
         rule.add_target(targets.SfnStateMachine(state_machine))
 
         # S3 bucket notification to trigger the Step Function

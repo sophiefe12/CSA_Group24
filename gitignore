@@ -1,0 +1,13 @@
+# Python virtual environments
+venv/
+.env/
+
+# CDK output
+cdk.out/
+
+# IDE specific files
+.vscode/
+.idea/
+
+# Environment variables
+.env

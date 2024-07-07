@@ -1,8 +1,18 @@
-*.js
-!jest.config.js
-*.d.ts
-node_modules
+# Python virtual environments
+.venv/
+.env/
 
-# CDK asset staging directory
-.cdk.staging
-cdk.out
+# CDK output
+cdk.out/
+
+# IDE specific files
+.vscode/
+.idea/
+
+# Environment variables
+.env
+
+# Python cache
+__pycache__/
+*.py[cod]
+*.pyo
